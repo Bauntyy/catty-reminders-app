@@ -26,6 +26,13 @@ It is recommended to install dependencies into a [virtual environment](https://d
 
 ## Running the app
 
+Prepare environment variables from template and export it:
+```bash
+cp .env.example .env
+# Edit the .env file as needed
+set -a; source .env; set +a
+```
+
 To run the app:
 
 ```
