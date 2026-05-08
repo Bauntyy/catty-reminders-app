@@ -1,0 +1,12 @@
+[Unit]
+Description=GitHub Webhook Listener
+After=network.target
+
+[Service]
+User=ubuntu
+WorkingDirectory=/home/ubuntu/Desktop/devops/lab_1
+ExecStart=/usr/bin/python3 /home/ubuntu/Desktop/devops/lab_1/catty-reminders-app/lab1/webhook_server/app.py
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
