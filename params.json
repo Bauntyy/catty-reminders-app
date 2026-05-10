@@ -281,11 +281,6 @@
       "app": "catty-reminders-app"
     },
     {
-      "login": "AkatsukiDeki",
-      "id": "kruglov",
-      "app": "csharp-example"
-    },
-    {
       "login": "anzorcode05",
       "id": "magomedagaev",
       "app": "catty-reminders-app"
@@ -298,6 +293,16 @@
     {
       "login": "RomaError5",
       "id": "otyubrin",
+      "app": "catty-reminders-app"
+    },
+    {
+      "login": "andreyKruglovRes",
+      "id": "kruglovdev",
+      "app": "catty-reminders-app"
+    },
+    {
+      "login": "DANILA21-3",
+      "id": "cherkashin",
       "app": "catty-reminders-app"
     },
     {
