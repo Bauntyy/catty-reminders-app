@@ -1,12 +1,13 @@
 [Unit]
-Description=Frp Client Service
+Description=FRP Client Service
 After=network.target
 
 [Service]
 Type=simple
-Restart=on-failure
-RestartSec=5s
-ExecStart=/usr/bin/frpc -c /etc/frp/frpc.toml
+ExecStart=/usr/local/bin/frpc -c /home/timoha/Desktop/devops/catty-reminders-app/frpc.toml
+Restart=always
+User=timoha
+WorkingDirectory=/home/timoha/Desktop/devops/catty-reminders-app
 
 [Install]
 WantedBy=multi-user.target
