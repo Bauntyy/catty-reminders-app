@@ -1,43 +1,39 @@
 import os
-from flask import Flask, request, jsonify
+from flask import Flask, request
 
 app = Flask(__name__)
 
 APP_PATH = "/home/timoha/Desktop/devops/catty-reminders-app"
-SERVICE_NAME = "catty-app"
+SERVICE = "catty-app.service"
 
-@app.route('/', methods=['POST'])
+@app.route("/", methods=["POST"])
 def webhook():
     data = request.get_json()
     if not data:
-        return 'No JSON', 400
+        return "no json", 400
 
-    ref = data.get('ref', '')
-    sha = data.get('after', 'unknown')
+    ref = data.get("ref", "")
+    sha = data.get("after", "")
 
-    if not ref:
-        return 'No ref', 400
+    if not ref or not sha:
+        return "bad payload", 400
 
-    branch = ref.split('/')[-1]
+    branch = ref.split("/")[-1]
 
-    print(f"Deploy branch: {branch}, SHA: {sha}")
+    print(f"deploy {branch} {sha}")
 
-    command = f"""
-    cd {APP_PATH} &&
-    git fetch origin &&
-    git reset --hard origin/{branch} &&
-    echo 'DEPLOY_REF={sha}' > .env &&
-    sudo -n systemctl restart {SERVICE_NAME}
-    """
+    cmd = f"""
+cd {APP_PATH} &&
+git fetch origin &&
+git reset --hard origin/{branch} &&
+echo DEPLOY_REF={sha} > .env &&
+sudo -n systemctl restart {SERVICE}
+"""
 
-    exit_code = os.system(command)
+    os.system(cmd)
 
-    if exit_code == 0:
-        print("Deploy success")
-        return "OK", 200
-    else:
-        print(f"Deploy failed: {exit_code}")
-        return "FAILED", 200 
+    return "ok", 200
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8080)
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=8080)
