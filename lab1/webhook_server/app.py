@@ -4,7 +4,7 @@ import subprocess
 app = Flask(__name__)
 
 APP_DIR = "/home/timoha/Desktop/devops/catty-reminders-app"
-SERVICE = "catty-app"
+SERVICE = "catty-app.service"
 ENV_FILE = f"{APP_DIR}/.env"
 
 @app.route("/", methods=["POST"])
@@ -29,7 +29,7 @@ def webhook():
             f.write(f"DEPLOY_REF={sha}\n")
 
         subprocess.run(
-            ["sudo", "systemctl", "restart", SERVICE],
+            ["sudo", "-n", "systemctl", "restart", SERVICE],
             check=True
         )
 
