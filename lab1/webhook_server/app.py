@@ -4,8 +4,8 @@ from flask import Flask, request
 
 app = Flask(__name__)
 
-APP_PATH = "/home/timoha/Desktop/devops/catty-reminders-app/lab1"
-SERVICE_NAME = "catty-app"
+APP_PATH = "/home/timoha/Desktop/devops/catty-reminders-app"
+SERVICE_NAME = "catty-app.service"
 
 @app.route('/', methods=['POST'])
 def webhook():
@@ -18,27 +18,28 @@ def webhook():
         return 'No ref found', 400
 
     branch = ref.split('/')[-1]
+    
     sha = data.get('after', 'unknown')
 
-    print(f"Получено событие для ветки: {branch}, SHA: {sha}")
+    print(f"Deploy branch: {branch}, SHA: {sha}")
 
     commands = [
         f"cd {APP_PATH}",
         "git fetch origin",
         f"git reset --hard origin/{branch}",
-        f"echo 'DEPLOY_REF={sha}' > {APP_PATH}/.env",
-        f"sudo -n systemctl restart {SERVICE_NAME}"
+        f"echo DEPLOY_REF={sha} > {APP_PATH}/.env",
+        f"sudo systemctl restart {SERVICE_NAME}"
     ]
 
     full_command = " && ".join(commands)
     exit_code = os.system(full_command)
 
     if exit_code == 0:
-        print(f"Успешно развернута ветка {branch} (SHA: {sha})")
-        return f"OK: Deployed branch {branch}", 200
+        print(f"Deployed {branch} ({sha})")
+        return "OK", 200
     else:
-        print(f"Ошибка при выполнении команд. Код: {exit_code}")
-        return 'Error: Deployment failed', 500
+        print(f"Deploy failed: {exit_code}")
+        return "ERROR", 500
 
 
 if __name__ == '__main__':
