@@ -1,64 +1,85 @@
-from flask import Flask, request
+from flask import Flask, request, jsonify
 import subprocess
 import os
+import logging
 
-app = Flask(__name__)
+class WebhookManager:
+    def __init__(self):
+        self.app = Flask(__name__)
 
-APP_DIR = "/home/timoha/Desktop/devops/catty-reminders-app"
-SERVICE = "catty-app.service"
+        # 🔧 НАСТРОЙКИ
+        self.port = 8080
+        self.app_dir = "/home/timoha/Desktop/devops/catty-reminders-app"
+        self.service_name = "catty-app.service"
+        self.env_file = os.path.join(self.app_dir, ".env")
 
-@app.route("/", methods=["POST"])
-def webhook():
-    data = request.get_json(silent=True)
+        logging.basicConfig(level=logging.INFO)
 
-    if not data:
-        return {"error": "no json"}, 400
+        self._register_routes()
 
-    ref = data.get("ref")
-    if not ref or not ref.startswith("refs/heads/"):
-        return {"error": "invalid ref"}, 400
+    def _register_routes(self):
+        self.app.add_url_rule("/", "webhook", self.handle_request, methods=["GET", "POST"])
 
-    branch = ref.split("/")[-1]
-    sha = data.get("after")
+    def handle_request(self):
+        if request.method == "GET":
+            return jsonify({"status": "ok", "message": "webhook alive"}), 200
 
-    print(f"[WEBHOOK] Deploy branch={branch}, sha={sha}")
+        event = request.headers.get("X-GitHub-Event")
+        if event != "push":
+            return jsonify({"message": "ignored (not push)"}), 200
 
-    try:
+        payload = request.get_json(silent=True) or {}
+        ref = payload.get("ref")
+
+        if not ref:
+            return jsonify({"error": "no ref"}), 400
+
+        branch = ref.split("/")[-1]
+
+        logging.info(f"Deploy started for branch: {branch}")
+
+        try:
+            self._deploy(branch)
+            return jsonify({"status": "success", "branch": branch}), 200
+
+        except subprocess.CalledProcessError as e:
+            logging.error(f"Deploy failed: {e}")
+            return jsonify({"status": "failed"}), 500
+
+    def _deploy(self, branch):
         subprocess.run(
-            ["git", "-C", APP_DIR, "fetch", "origin"],
+            ["git", "-C", self.app_dir, "fetch", "origin"],
             check=True
         )
 
         subprocess.run(
-            ["git", "-C", APP_DIR, "checkout", branch],
+            ["git", "-C", self.app_dir, "checkout", branch],
             check=True
         )
 
         subprocess.run(
-            ["git", "-C", APP_DIR, "reset", "--hard", f"origin/{branch}"],
+            ["git", "-C", self.app_dir, "pull", "origin", branch],
             check=True
         )
+
+        logging.info("Code updated")
+
+        with open(self.env_file, "w") as f:
+            f.write(f"DEPLOY_BRANCH={branch}\n")
+
+        logging.info("ENV updated")
 
         subprocess.run(
-            ["git", "-C", APP_DIR, "clean", "-fd"],
+            ["sudo", "-n", "systemctl", "restart", self.service_name],
             check=True
         )
 
-        with open(os.path.join(APP_DIR, ".env"), "w") as f:
-            f.write(f"DEPLOY_BRANCH={branch}\nDEPLOY_SHA={sha}\n")
+        logging.info("Service restarted")
 
-        subprocess.run(
-            ["sudo", "-n", "systemctl", "restart", SERVICE],
-            check=True
-        )
-
-        print("[WEBHOOK] Deploy success")
-        return {"status": "ok", "branch": branch}, 200
-
-    except subprocess.CalledProcessError as e:
-        print("[WEBHOOK ERROR]", e)
-        return {"status": "failed"}, 500
+    def run(self):
+        self.app.run(host="0.0.0.0", port=self.port)
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8080)
+    manager = WebhookManager()
+    manager.run()
