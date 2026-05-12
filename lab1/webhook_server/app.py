@@ -1,57 +1,44 @@
-from http.server import BaseHTTPRequestHandler, HTTPServer
-import json
+from flask import Flask, request
 import subprocess
 
-APP_PATH = "/home/ubuntu/Desktop/devops/lab_1/catty-reminders-app"
+app = Flask(__name__)
 
-class Handler(BaseHTTPRequestHandler):
+APP_DIR = "/home/timoha/Desktop/devops/catty-reminders-app"
+SERVICE = "catty-app"
+ENV_FILE = f"{APP_DIR}/.env"
 
-    def do_GET(self):
-        self.send_response(200)
-        self.end_headers()
-        self.wfile.write(b"OK")
+@app.route("/", methods=["POST"])
+def webhook():
+    data = request.get_json(silent=True)
 
-    def do_POST(self):
-        try:
-            length = int(self.headers.get('Content-Length', 0))
-            body = self.rfile.read(length)
+    if not data:
+        return "no json", 400
 
-            print("Webhook received")
+    sha = data.get("after")
+    if not sha:
+        return "no sha", 400
 
-            data = json.loads(body.decode() or "{}")
+    print("Deploy:", sha)
 
-            # --- ВЫЧИСЛЕНИЕ ВЕТКИ (ВАЖНО ДЛЯ ЛР) ---
-            ref = data.get("ref", "refs/heads/lab1")
-            branch = ref.split("/")[-1]
+    try:
+        subprocess.run(["git", "-C", APP_DIR, "fetch", "origin"], check=True)
+        subprocess.run(["git", "-C", APP_DIR, "reset", "--hard", sha], check=True)
+        subprocess.run(["git", "-C", APP_DIR, "clean", "-fd"], check=True)
 
-            print(f"Deploy branch: {branch}")
+        with open(ENV_FILE, "w") as f:
+            f.write(f"DEPLOY_REF={sha}\n")
 
-            # --- ДЕПЛОЙ ---
-            cmd = f"""
-            cd {APP_PATH} &&
-            git fetch origin &&
-            git reset --hard origin/{branch} &&
-            sudo systemctl restart catty-app
-            """
+        subprocess.run(
+            ["sudo", "systemctl", "restart", SERVICE],
+            check=True
+        )
 
-            result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+        return "ok", 200
 
-            if result.returncode == 0:
-                print("SUCCESS: Deployed")
-            else:
-                print("ERROR:", result.stderr)
-
-            self.send_response(200)
-            self.end_headers()
-            self.wfile.write(b"OK")
-
-        except Exception as e:
-            print("EXCEPTION:", e)
-            self.send_response(200)
-            self.end_headers()
-            self.wfile.write(b"OK")
+    except subprocess.CalledProcessError as e:
+        print("DEPLOY ERROR:", e)
+        return "deploy failed", 500
 
 
-server = HTTPServer(("0.0.0.0", 8080), Handler)
-print("Webhook running on 8080...")
-server.serve_forever()
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=8080)
