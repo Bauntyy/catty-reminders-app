@@ -5,13 +5,14 @@ auth.method = "token"
 auth.token = "devops"
 
 [[proxies]]
-name = "hook-chesnokov"
-type = "http"
-localPort = 8080
-customDomains = ["webhook.chesnokov.course.prafdin.ru"]
-
-[[proxies]]
 name = "app-chesnokov"
 type = "http"
 localPort = 8181
 customDomains = ["app.chesnokov.course.prafdin.ru"]
+
+[[proxies]]
+name = "ssh-chesnokov"
+type = "tcp"
+localPort = 22
+remotePort = 3129
+
