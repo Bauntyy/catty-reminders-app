@@ -18,4 +18,4 @@ jobs:
             git fetch origin
             git reset --hard ${{ github.sha }}
             echo "DEPLOY_REF=${{ github.sha }}" > /home/timoha/Desktop/devops/catty-reminders-app-2/.env
-            sudo systemctl restart catty-app
+            sudo systemctl restart catty-app.service
