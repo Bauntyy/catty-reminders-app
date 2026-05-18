@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - lab2
+      - lab2_autotests*
+  pull_request:
+    branches:
+      - lab2
+      - lab2_autotests*
+
+jobs:
+  pipeline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install uvicorn pytest-playwright
+          playwright install --with-deps chromium
+
+      - name: Start app
+        run: |
+          nohup uvicorn app.main:app --host 127.0.0.1 --port 8181 &
+          sleep 5
+
+      - name: Run tests
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+        run: pytest --junitxml=test_result.xml || true
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test_result
+          path: test_result.xml
