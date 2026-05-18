@@ -19,7 +19,7 @@ jobs:
           host: course.prafdin.ru
           username: Bauntyy             
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: 3105
+          port: 3129
           script: |
             IMAGE="ghcr.io/${{ steps.prep.outputs.repo_lower }}:${{ github.sha }}"
             CONTAINER_NAME="catty-container"
