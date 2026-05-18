@@ -17,7 +17,7 @@ jobs:
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: course.prafdin.ru
-          username: Bauntyy             
+          username: timoha             
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 3129
           script: |
