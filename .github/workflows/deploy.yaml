@@ -21,7 +21,7 @@ jobs:
           host: course.prafdin.ru
           username: timoha
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: 3119
+          port: 3129
           script: |
             IMAGE="ghcr.io/${{ steps.prep.outputs.repo_lower }}:latest"
             CONTAINER_NAME="catty-container"
